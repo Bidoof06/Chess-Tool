@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chess Training</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2c5b88">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+/* Apply the custom colours chosen on the review page before the first paint. */
+try { (function () { var c = JSON.parse(localStorage.getItem('colors') || '{}'); for (var k in c) if (/^[a-z-]+$/.test(k) && /^#[0-9a-f]{6}$/i.test(c[k])) document.documentElement.style.setProperty('--' + k, c[k]); })(); } catch (e) {}
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Training</h1>
+    <p>Walk through openings move by move, practise their lines, and solve tactics.</p>
+    <div class="top-nav"><a class="btn" href="index.html">Game review</a></div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab sel" id="tab-op" role="tab" aria-selected="true">Openings</button>
+    <button class="tab" id="tab-tac" role="tab" aria-selected="false">Tactics</button>
+  </div>
+
+  <div class="main">
+    <div class="left">
+      <p class="example-note" id="t-title"></p>
+      <div class="board-row"><div id="board" aria-label="Chess board"></div></div>
+      <div class="nav" id="t-nav"></div>
+      <section class="panel verdict" id="t-info" aria-live="polite"></section>
+    </div>
+
+    <div class="right" id="op-side">
+      <section class="panel stack">
+        <h2>Openings</h2>
+        <input class="field" id="op-search" type="search" placeholder="Search openings, for example Sicilian or C60" autocomplete="off" spellcheck="false">
+        <div class="list" id="op-fams"></div>
+        <p class="fine" id="op-count" style="margin:0"></p>
+      </section>
+      <section class="panel stack" id="op-fam" hidden></section>
+    </div>
+
+    <div class="right" id="tac-side" hidden>
+      <section class="panel stack">
+        <h2>Tactics</h2>
+        <div class="row">
+          <button class="tab sel" id="src-set">Puzzle set</button>
+          <button class="tab" id="src-mine">My mistakes</button>
+        </div>
+        <div class="row" id="tac-level-row">
+          <label for="tac-level">Level</label>
+          <select id="tac-level" class="grow">
+            <option value="600-2200">All levels (600 to 2200)</option>
+            <option value="600-1000">Beginner (600 to 1000)</option>
+            <option value="1000-1400" selected>Improving (1000 to 1400)</option>
+            <option value="1400-1800">Club (1400 to 1800)</option>
+            <option value="1800-2200">Strong (1800 to 2200)</option>
+          </select>
+        </div>
+        <p id="tac-stats" style="margin:0"></p>
+        <p class="fine" id="tac-about" style="margin:0"></p>
+        <div class="row" id="tac-mine-row" hidden><button id="tac-clear">Delete my saved mistakes</button></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="chess.js"></script>
+<script src="board.js"></script>
+<script src="training.js"></script>
+</body>
+</html>

@@ -9,9 +9,26 @@ Everything runs in the browser; there is no server.
 - **Colors:** the Colors button lets you change every color in the app (page, board, pieces, arrows, move grades).
   Your choices are saved in the browser.
 
+## Training
+
+`training.html` has two parts. Progress is saved in the browser; there are no accounts.
+
+- **Openings:** pick any of 149 openings (3,865 named lines). Walk through a line move by move with a note on what
+  each move does and the replies the book knows, or practise a line: the app plays the other side, tells you when you
+  leave the line and shows the right move. A line counts as known after two clean runs in a row.
+- **Tactics:** find the best move. Puzzles come from a bundled set of 1,600 (rated 600 to 2200) and from your own
+  games: after each review, your mistakes, misses and blunders are saved as puzzles.
+
+Data sources and licences are in `LICENSE-data.txt`: openings from lichess-org/chess-openings and puzzles from the
+Lichess puzzle database, both CC0 (public domain).
+
 ## Files
 
 - `index.html` - the app (markup, styles and logic)
+- `training.html`, `training.js` - the training page
+- `style.css` - styles shared by both pages
+- `board.js` - the movable board used by the training page
+- `openings.json`, `puzzles.json` - training data (see `LICENSE-data.txt`)
 - `chess.js` - chess rules and PGN parsing (chess.js 0.10.3, BSD licence)
 - `stockfish-19-lite-single.js` / `.wasm` - Stockfish 19 Lite engine (stockfish.js 19.0.1)
 - `stockfish.js` - Stockfish 10 fallback for browsers that cannot run the newer engine

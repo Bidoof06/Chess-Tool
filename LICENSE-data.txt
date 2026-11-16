@@ -1,0 +1,17 @@
+Training data bundled with this app
+===================================
+
+openings.json
+  Source:  lichess-org/chess-openings  https://github.com/lichess-org/chess-openings
+  Licence: CC0 1.0 Public Domain Dedication  https://creativecommons.org/publicdomain/zero/1.0/
+  Changes: the a.tsv to e.tsv files joined into one list of [ECO code, name, moves]; move numbers removed.
+
+puzzles.json
+  Source:  Lichess puzzle database  https://database.lichess.org/#puzzles  (export dated November 2026)
+  Licence: CC0 1.0 Public Domain Dedication  https://creativecommons.org/publicdomain/zero/1.0/
+  Changes: 1,600 puzzles sampled at random from the 6.2 million in the export, 100 from each 100-point rating
+           band between 600 and 2200, keeping only well-tested ones (popularity 90 or more, 1,000 or more plays,
+           rating deviation 80 or less, 2 to 10 moves). Kept fields: id, position, moves, rating, themes.
+
+The opening overviews and the move-by-move notes shown on the training page are not from these data sets:
+the overviews were written for this app, and the notes are generated from the position by training.js.
