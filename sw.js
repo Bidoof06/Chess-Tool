@@ -1,6 +1,6 @@
 // Offline support: keeps a copy of the app files, serves them instantly, and refreshes them in the background.
 // Bump the version when you upload changed files so installed copies pick them up.
-const CACHE = 'game-review-v1';
+const CACHE = 'game-review-v2';
 const FILES = ['./', 'index.html', 'chess.js', 'stockfish-19-lite-single.js', 'stockfish-19-lite-single.wasm',
   'stockfish.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 

@@ -4,6 +4,11 @@ Paste a chess.com PGN or look up your recent games by username, and get an engin
 accuracy, a rough rating estimate, a grade for every move and a better move for every slip.
 Everything runs in the browser; there is no server.
 
+- **Explore side lines:** click or drag a piece on the board (or press Explore) to try your own moves from any
+  point in the game. The engine shows the best move and the next best one for every position you reach.
+- **Colors:** the Colors button lets you change every color in the app (page, board, pieces, arrows, move grades).
+  Your choices are saved in the browser.
+
 ## Files
 
 - `index.html` - the app (markup, styles and logic)

@@ -13,6 +13,10 @@
 <meta name="apple-mobile-web-app-title" content="Game Review">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+/* Apply saved custom colours before the first paint. The Colors panel further down manages them. */
+try { (function () { var c = JSON.parse(localStorage.getItem('colors') || '{}'); for (var k in c) if (/^[a-z-]+$/.test(k) && /^#[0-9a-f]{6}$/i.test(c[k])) document.documentElement.style.setProperty('--' + k, c[k]); })(); } catch (e) {}
+</script>
 <style>
 /* Layout idea: board and the verdict on the current move on the left, the scoresheet (summary, graph, move list) on the right. */
 :root {
@@ -37,6 +41,13 @@
   --c-miss: #d6566d;
   --c-blunder: #cb3731;
   --c-forced: #8a96a3;
+  --coord: #1d2630;
+  --piece-white: #fbfcfd;
+  --piece-white-edge: #1c252e;
+  --piece-black: #1d242b;
+  --piece-black-edge: #ffffff;
+  --arrow: #3f9a4f;
+  --pick: #e9b730;
   --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
   --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -84,6 +95,7 @@ body {
 header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
 h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
 header.top p { margin: 0; color: var(--muted); }
+header.top button { margin-left: auto; }
 h2 { font-family: var(--font-display); font-weight: 500; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
 button, select, textarea { font: inherit; color: inherit; }
@@ -131,8 +143,8 @@ select { background: var(--surface); border: 1px solid var(--line); border-radiu
 .evalbar i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--graph-white); transition: height 0.25s; }
 .evalbar.flip i { bottom: auto; top: 0; }
 .evalbar b { position: absolute; left: 0; right: 0; text-align: center; font: 600 10px var(--font-mono); z-index: 1; }
-.evalbar b.w { bottom: 3px; color: #1b232c; }
-.evalbar b.b { top: 3px; color: #e9eef2; }
+.evalbar b.w { bottom: 3px; color: var(--graph-black); }
+.evalbar b.b { top: 3px; color: var(--graph-white); }
 .evalbar.flip b.w { bottom: auto; top: 3px; }
 .evalbar.flip b.b { top: auto; bottom: 3px; }
 .board { position: relative; flex: 1; aspect-ratio: 1; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); border-radius: 5px; overflow: hidden; container-type: inline-size; user-select: none; }
@@ -140,13 +152,21 @@ select { background: var(--surface); border: 1px solid var(--line); border-radiu
 .sq.l { background: var(--sq-light); }
 .sq.d { background: var(--sq-dark); }
 .sq.hl::before { content: ""; position: absolute; inset: 0; background: var(--hl, var(--c-forced)); opacity: 0.5; }
-.sq .pc { position: relative; font-family: "Noto Sans Symbols2", "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", sans-serif; }
-.sq .pc.w { color: #fbfcfd; text-shadow: 0 0 2px #10161c, 1px 0 #1c252e, -1px 0 #1c252e, 0 1px #1c252e, 0 -1px #1c252e, 1px 1px #1c252e, -1px -1px #1c252e, 1px -1px #1c252e, -1px 1px #1c252e; }
-.sq .pc.b { color: #1d242b; text-shadow: 0 0 1px rgba(255,255,255,0.55); }
-.sq .co { position: absolute; font: 600 1.9cqw var(--font-mono); opacity: 0.75; color: #1d2630; }
+.pc { position: relative; font-family: "Noto Sans Symbols2", "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", sans-serif; }
+.pc.w { --e: var(--piece-white-edge); color: var(--piece-white); text-shadow: 0 0 2px var(--e), 1px 0 var(--e), -1px 0 var(--e), 0 1px var(--e), 0 -1px var(--e), 1px 1px var(--e), -1px -1px var(--e), 1px -1px var(--e), -1px 1px var(--e); }
+.pc.b { color: var(--piece-black); text-shadow: 0 0 1px color-mix(in srgb, var(--piece-black-edge) 55%, transparent); }
+.pc.lift { opacity: 0.3; }
+.ghost { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -50%); line-height: 1; }
+.sq.mine { cursor: grab; touch-action: none; }
+.sq.pk::before { content: ""; position: absolute; inset: 0; background: var(--pick); opacity: 0.6; }
+.sq.tg::after { content: ""; position: absolute; top: 50%; left: 50%; width: 30%; height: 30%; transform: translate(-50%, -50%); border-radius: 50%; background: var(--pick); box-shadow: 0 0 0 1px rgba(0,0,0,0.3); z-index: 1; }
+.sq.tg.cap::after { width: 88%; height: 88%; background: none; border: 0.9cqw solid var(--pick); }
+.promo { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 2cqw; background: rgba(0,0,0,0.5); }
+.promo button { font-size: 9cqw; line-height: 1; padding: 1.5cqw 2cqw; background: var(--sq-light); }
+.sq .co { position: absolute; font: 600 1.9cqw var(--font-mono); opacity: 0.75; color: var(--coord); }
 .sq .co.r { top: 3%; left: 4%; }
 .sq .co.f { bottom: 2%; right: 5%; }
-.sq .badge { position: absolute; top: -4%; right: -4%; z-index: 3; width: 4.6cqw; height: 4.6cqw; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font: 700 2.3cqw var(--font-body); background: var(--hl); box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+.sq .badge { position: absolute; top: -4%; right: -4%; z-index: 3; width: 4.6cqw; height: 4.6cqw; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--hl-ink, #fff); font: 700 2.3cqw var(--font-body); background: var(--hl); box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
 .board svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
 .nav { display: flex; gap: 6px; }
 .nav button { flex: 1; font-family: var(--font-mono); padding: 8px 0; }
@@ -155,7 +175,8 @@ select { background: var(--surface); border: 1px solid var(--line); border-radiu
 /* verdict */
 .verdict { display: flex; flex-direction: column; gap: 8px; min-height: 132px; }
 .verdict .head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 20px; padding: 2px 10px 2px 3px; font-weight: 600; font-size: 13px; color: #fff; background: var(--hl); }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 20px; padding: 2px 10px 2px 3px; font-weight: 600; font-size: 13px; color: var(--hl-ink, #fff); background: var(--hl); }
+.pill.ex { --hl: var(--accent); --hl-ink: var(--accent-ink); padding-left: 10px; }
 .pill i { font-style: normal; background: rgba(255,255,255,0.25); border-radius: 50%; min-width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; }
 .verdict .mv { font: 600 17px var(--font-mono); }
 .verdict .ev { margin-left: auto; font: 400 13px var(--font-mono); color: var(--muted); }
@@ -163,6 +184,25 @@ select { background: var(--surface); border: 1px solid var(--line); border-radiu
 .better { border-top: 1px solid var(--line); padding-top: 8px; font-size: 14px; }
 .better b { font-family: var(--font-mono); }
 .better .linepv { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.better div { margin-top: 3px; }
+.better small { display: block; margin-top: 3px; color: var(--muted); }
+.exline { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; font: 400 14px var(--font-mono); }
+.exline .n { color: var(--muted); padding-left: 4px; }
+.exline button { border: 0; background: none; padding: 2px 6px; border-radius: 5px; font: inherit; }
+.exline button:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.exline button.sel { background: color-mix(in srgb, var(--accent) 24%, transparent); font-weight: 600; }
+.exline button.fut { color: var(--muted); }
+.exbtns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* colours */
+.colors { display: flex; flex-direction: column; gap: 14px; }
+.cgroup { display: flex; flex-direction: column; gap: 6px; }
+.cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px 16px; }
+.cfield { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cfield input { flex: 0 0 36px; width: 36px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
+.cfield label { flex: 1; min-width: 0; }
+.cfield button { padding: 1px 7px; font-size: 13px; }
+.colors .fine { margin: 0; }
 
 /* summary */
 .players { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -170,8 +210,8 @@ select { background: var(--surface); border: 1px solid var(--line); border-radiu
 .player .who { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 7px; font-weight: 600; min-width: 0; }
 .player .who span.nm { overflow-wrap: break-word; min-width: 0; }
 .chip { flex: 0 0 12px; width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--muted); }
-.chip.w { background: #fbfcfd; }
-.chip.b { background: #1d242b; }
+.chip.w { background: var(--piece-white); }
+.chip.b { background: var(--piece-black); }
 .player .elo { color: var(--muted); font-weight: 400; font-size: 13px; }
 .stats { display: flex; gap: 16px; flex-wrap: wrap; }
 .stat small { display: block; color: var(--muted); font-size: 12px; }
@@ -180,7 +220,7 @@ select { background: var(--surface); border: 1px solid var(--line); border-radiu
 .counts td { padding: 3px 4px; border-top: 1px solid var(--line); }
 .counts td.n { text-align: center; width: 22%; font-family: var(--font-mono); }
 .counts td.n.zero { color: var(--muted); opacity: 0.55; }
-.dot { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--hl); color: #fff; font: 700 9.5px var(--font-body); margin-right: 7px; vertical-align: -3px; }
+.dot { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--hl); color: var(--hl-ink, #fff); font: 700 9.5px var(--font-body); margin-right: 7px; vertical-align: -3px; }
 .fine { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
 
 /* graph */
@@ -208,7 +248,10 @@ select { background: var(--surface); border: 1px solid var(--line); border-radiu
   <header class="top">
     <h1>Chess Game Review</h1>
     <p>Paste a game, get engine analysis, accuracy, a rating estimate and a better move for every slip.</p>
+    <button id="colors-btn" aria-expanded="false" aria-controls="colors">Colors</button>
   </header>
+
+  <section class="panel colors" id="colors" aria-label="Colors" hidden></section>
 
   <section class="panel input" aria-label="Game input">
     <div class="lookup">
@@ -253,7 +296,9 @@ select { background: var(--surface); border: 1px solid var(--line); border-radiu
         <button id="next" aria-label="Next move">&gt;</button>
         <button id="last" aria-label="End of game">&gt;|</button>
         <button id="flip" class="wide">Flip board</button>
+        <button id="explore" class="wide">Explore</button>
       </div>
+      <p class="example-note">Click or drag a piece to try a different move. The engine shows the best reply as you go.</p>
       <section class="panel verdict" id="verdict" aria-live="polite"></section>
     </div>
 
@@ -490,7 +535,7 @@ var Review = (function () {
   }
 
   return { CLASSES: CLASSES, START: START, parseGame: parseGame, parseInfo: parseInfo, toEval: toEval, terminalEval: terminalEval,
-    buildReview: buildReview, winWhite: winWhite, fmtEval: fmtEval, ratingFromAccuracy: ratingFromAccuracy };
+    buildReview: buildReview, sanLine: sanLine, winWhite: winWhite, fmtEval: fmtEval, ratingFromAccuracy: ratingFromAccuracy };
 })();
 </script>
 <script>
@@ -502,18 +547,23 @@ var Review = (function () {
   var GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
   var CLS = {}; Review.CLASSES.forEach(function (c) { CLS[c.id] = c; });
   var NOTABLE = { brilliant: 1, great: 1, miss: 1, mistake: 1, blunder: 1 };
-  var state = { game: null, review: null, sel: -1, flip: false, running: false, cancel: false, engineNote: '' };
+  /* explore is null on the game's own moves, or { moves: [...], pos: n } while trying a side line from move `sel`. */
+  var state = { game: null, review: null, sel: -1, flip: false, running: false, cancel: false, engineNote: '', explore: null };
   /* Search depth per engine. "new" is Stockfish 19 (WebAssembly); "old" is the Stockfish 10 fallback, which is much slower per ply. */
   var DEPTHS = { 'new': { quick: 12, standard: 16, deep: 18 }, 'old': { quick: 10, standard: 12, deep: 14 } };
-  var engine = null;
+  var engine = null, engineReady = null;
+  var pick = null;      /* piece picked up on the board: { from, targets, ghost, down } */
+  var exCache = {};     /* engine results for explored positions, by FEN */
+  var exJob = { busy: false, fen: null, stopped: false, promise: null };
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-  function hl(c) { return 'var(--c-' + c + ')'; }
+  function paint(e, c) { e.style.setProperty('--hl', 'var(--c-' + c + ')'); e.style.setProperty('--hl-ink', 'var(--ci-' + c + ', #fff)'); }
+  function glyph(type) { return GLYPH[type] + '\uFE0E'; }
 
   /* ---------- engine ---------- */
   function Engine(file, kind) {
     var self = this;
-    this.lines = {}; this.done = null; this.waiters = []; this.kind = kind; this.name = '';
+    this.lines = {}; this.done = null; this.onInfo = null; this.waiters = []; this.kind = kind; this.name = '';
     this.worker = new Worker(file);
     this.failed = new Promise(function (_, rej) { self.worker.onerror = function () { rej(new Error('The engine could not start in this browser.')); }; });
     this.failed.catch(function () {});
@@ -521,7 +571,7 @@ var Review = (function () {
       var line = typeof e.data === 'string' ? e.data : '';
       if (line.indexOf('id name ') === 0) self.name = line.slice(8).trim();
       var info = Review.parseInfo(line);
-      if (info) { self.lines[info.multipv] = info; return; }
+      if (info) { self.lines[info.multipv] = info; if (self.onInfo) self.onInfo(); return; }
       if (line.indexOf('bestmove') === 0 && self.done) { var d = self.done; self.done = null; d(self.lines); return; }
       for (var i = 0; i < self.waiters.length; i++) {
         if (line.indexOf(self.waiters[i].key) === 0) { self.waiters.splice(i, 1)[0].res(); break; }
@@ -567,9 +617,17 @@ var Review = (function () {
     });
   }
 
+  function getEngine() {
+    if (!engineReady) engineReady = startEngine().then(function (e) { engine = e; return e; }, function (err) { engineReady = null; throw err; });
+    return engineReady;
+  }
+
   function analyseGame(game, level) {
     var n = game.moves.length, evals = [], depth = 12;
-    var ready = engine ? Promise.resolve() : startEngine().then(function (e) { engine = e; });
+    /* The one engine is shared with exploring, so let any search for a side line finish stopping first. */
+    var ready = getEngine().then(function () {
+      if (exJob.busy) { exJob.stopped = true; engine.send('stop'); return exJob.promise; }
+    });
     function step(i) {
       if (state.cancel) return Promise.reject(new Error('cancelled'));
       if (i > n) return Promise.resolve(evals);
@@ -593,7 +651,8 @@ var Review = (function () {
   }
 
   /* ---------- rendering ---------- */
-  function currentFen() { return state.sel < 0 ? state.game.start : state.game.moves[state.sel].fenAfter; }
+  function baseFen() { return state.sel < 0 ? state.game.start : state.game.moves[state.sel].fenAfter; }
+  function currentFen() { var x = state.explore; return x && x.pos > 0 ? x.moves[x.pos - 1].fenAfter : baseFen(); }
   function sqXY(sq) {
     var f = sq.charCodeAt(0) - 97, r = +sq[1] - 1;
     return state.flip ? { x: 7 - f, y: r } : { x: f, y: 7 - r };
@@ -601,49 +660,245 @@ var Review = (function () {
 
   function renderBoard() {
     var board = $('board'); board.textContent = '';
-    var g = new Chess(currentFen());
-    var mv = state.sel >= 0 ? (state.review ? state.review.moves[state.sel] : state.game.moves[state.sel]) : null;
-    var color = mv && mv.cls ? hl(mv.cls) : 'var(--c-forced)';
-    for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) {
-      var f = state.flip ? 7 - x : x, r = state.flip ? y : 7 - y;
+    var g = new Chess(currentFen()), turn = g.turn(), x = state.explore;
+    var mv = null;
+    if (x && x.pos > 0) mv = x.moves[x.pos - 1];
+    else if (state.sel >= 0) mv = state.review ? state.review.moves[state.sel] : state.game.moves[state.sel];
+    for (var y = 0; y < 8; y++) for (var c = 0; c < 8; c++) {
+      var f = state.flip ? 7 - c : c, r = state.flip ? y : 7 - y;
       var name = String.fromCharCode(97 + f) + (r + 1);
-      var sq = el('div', 'sq ' + ((f + r) % 2 ? 'l' : 'd'));
-      if (x === 0) sq.appendChild(el('span', 'co r', String(r + 1)));
+      var sq = el('div', 'sq ' + ((f + r) % 2 ? 'l' : 'd')); sq.dataset.sq = name;
+      if (c === 0) sq.appendChild(el('span', 'co r', String(r + 1)));
       if (y === 7) sq.appendChild(el('span', 'co f', String.fromCharCode(97 + f)));
-      if (mv && (name === mv.from || name === mv.to)) { sq.classList.add('hl'); sq.style.setProperty('--hl', color); }
+      if (mv && (name === mv.from || name === mv.to)) { sq.classList.add('hl'); paint(sq, mv.cls || 'forced'); }
       var p = g.get(name);
-      if (p) sq.appendChild(el('span', 'pc ' + p.color, GLYPH[p.type] + '︎'));
+      if (p) { sq.appendChild(el('span', 'pc ' + p.color, glyph(p.type))); if (p.color === turn) sq.classList.add('mine'); }
       if (mv && mv.cls && name === mv.to) sq.appendChild(el('span', 'badge', CLS[mv.cls].sym));
       board.appendChild(sq);
     }
-    if (mv && mv.cls && mv.bestUci && mv.bestUci !== mv.uci && mv.loss >= 2) {
-      var a = sqXY(mv.bestUci.slice(0, 2)), b = sqXY(mv.bestUci.slice(2, 4));
-      var ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
-      svg.setAttribute('viewBox', '0 0 8 8');
-      var dx = b.x - a.x, dy = b.y - a.y, len = Math.sqrt(dx * dx + dy * dy), ux = dx / len, uy = dy / len;
-      var x1 = a.x + 0.5 + ux * 0.2, y1 = a.y + 0.5 + uy * 0.2, x2 = b.x + 0.5 - ux * 0.38, y2 = b.y + 0.5 - uy * 0.38;
-      var ln = document.createElementNS(ns, 'line');
-      ln.setAttribute('x1', x1); ln.setAttribute('y1', y1); ln.setAttribute('x2', x2); ln.setAttribute('y2', y2);
-      ln.setAttribute('stroke', '#3f9a4f'); ln.setAttribute('stroke-width', '0.17'); ln.setAttribute('stroke-linecap', 'round'); ln.setAttribute('opacity', '0.85');
-      var tip = document.createElementNS(ns, 'polygon');
-      var tx = b.x + 0.5 - ux * 0.1, ty = b.y + 0.5 - uy * 0.1, px = -uy * 0.2, py = ux * 0.2;
-      tip.setAttribute('points', tx + ',' + ty + ' ' + (x2 + px) + ',' + (y2 + py) + ' ' + (x2 - px) + ',' + (y2 - py));
-      tip.setAttribute('fill', '#3f9a4f'); tip.setAttribute('opacity', '0.85');
-      svg.appendChild(ln); svg.appendChild(tip); board.appendChild(svg);
-    }
-    /* eval bar */
-    var bar = $('evalbar'); bar.classList.toggle('flip', state.flip);
-    if (state.review) {
-      var w = state.sel < 0 ? Review.winWhite(state.review.startEval) : state.review.moves[state.sel].whiteWin;
-      var txt = state.sel < 0 ? Review.fmtEval(state.review.startEval) : state.review.moves[state.sel].evalText;
-      $('evfill').style.height = Math.max(3, Math.min(97, w)) + '%';
-      var short = txt.replace(/^[+-]/, '');
-      $('evw').textContent = w >= 50 ? short : ''; $('evb').textContent = w < 50 ? short : '';
-    } else { $('evfill').style.height = '50%'; $('evw').textContent = ''; $('evb').textContent = ''; }
+    markPick(); drawArrow(); renderEvalBar();
   }
+
+  /* Show the picked-up piece and where it can go, without rebuilding the board (a drag may be in progress). */
+  function markPick() {
+    var sqs = $('board').querySelectorAll('.sq');
+    for (var i = 0; i < sqs.length; i++) {
+      var s = sqs[i], name = s.dataset.sq, pc = s.querySelector('.pc');
+      var target = !!(pick && pick.targets[name]);
+      s.classList.toggle('pk', !!pick && pick.from === name);
+      s.classList.toggle('tg', target);
+      s.classList.toggle('cap', target && !!pc);
+      if (pc) pc.classList.toggle('lift', !!pick && !!pick.ghost && pick.from === name);
+    }
+  }
+
+  /* One arrow. On the game's moves: the better move when the played one lost ground. While exploring: the best next move. */
+  function drawArrow() {
+    var board = $('board'), old = board.querySelector('svg');
+    if (old) board.removeChild(old);
+    var uci = null;
+    if (state.explore) { var c = exGet(currentFen()); if (c && c.ev && c.ev.best) uci = c.ev.best; }
+    else if (state.sel >= 0 && state.review) {
+      var mv = state.review.moves[state.sel];
+      if (mv.bestUci && mv.bestUci !== mv.uci && mv.loss >= 2) uci = mv.bestUci;
+    }
+    if (!uci) return;
+    var a = sqXY(uci.slice(0, 2)), b = sqXY(uci.slice(2, 4));
+    var ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 8 8');
+    var dx = b.x - a.x, dy = b.y - a.y, len = Math.sqrt(dx * dx + dy * dy), ux = dx / len, uy = dy / len;
+    var x1 = a.x + 0.5 + ux * 0.2, y1 = a.y + 0.5 + uy * 0.2, x2 = b.x + 0.5 - ux * 0.38, y2 = b.y + 0.5 - uy * 0.38;
+    var ln = document.createElementNS(ns, 'line');
+    ln.setAttribute('x1', x1); ln.setAttribute('y1', y1); ln.setAttribute('x2', x2); ln.setAttribute('y2', y2);
+    ln.style.stroke = 'var(--arrow)'; ln.setAttribute('stroke-width', '0.17'); ln.setAttribute('stroke-linecap', 'round'); ln.setAttribute('opacity', '0.85');
+    var tip = document.createElementNS(ns, 'polygon');
+    var tx = b.x + 0.5 - ux * 0.1, ty = b.y + 0.5 - uy * 0.1, px = -uy * 0.2, py = ux * 0.2;
+    tip.setAttribute('points', tx + ',' + ty + ' ' + (x2 + px) + ',' + (y2 + py) + ' ' + (x2 - px) + ',' + (y2 - py));
+    tip.style.fill = 'var(--arrow)'; tip.setAttribute('opacity', '0.85');
+    svg.appendChild(ln); svg.appendChild(tip); board.appendChild(svg);
+  }
+
+  function renderEvalBar() {
+    var bar = $('evalbar'); bar.classList.toggle('flip', state.flip);
+    var w = null, txt = '';
+    if (state.explore) {
+      var c = exGet(currentFen());
+      if (!c || !c.ev) return;   /* keep the last reading until the engine reports */
+      w = Review.winWhite(c.ev); txt = Review.fmtEval(c.ev);
+    } else if (state.review) {
+      w = state.sel < 0 ? Review.winWhite(state.review.startEval) : state.review.moves[state.sel].whiteWin;
+      txt = state.sel < 0 ? Review.fmtEval(state.review.startEval) : state.review.moves[state.sel].evalText;
+    }
+    if (w == null) { $('evfill').style.height = '50%'; $('evw').textContent = ''; $('evb').textContent = ''; return; }
+    $('evfill').style.height = Math.max(3, Math.min(97, w)) + '%';
+    var short = txt.replace(/^[+-]/, '');
+    $('evw').textContent = w >= 50 ? short : ''; $('evb').textContent = w < 50 ? short : '';
+  }
+
+  /* ---------- exploring side lines ---------- */
+  /* What is known about a position: a finished game, an engine result, or null if the engine has not reported yet. */
+  function exGet(fen) {
+    var c = exCache[fen];
+    if (c) return c;
+    var g = new Chess(fen);
+    if (g.in_checkmate()) c = { done: true, over: 'Checkmate. ' + (g.turn() === 'w' ? 'Black' : 'White') + ' wins.', ev: { terminal: 'mate', loser: g.turn() } };
+    else if (g.in_stalemate()) c = { done: true, over: 'Stalemate. The game is drawn.', ev: { terminal: 'draw', cp: 0, mate: null } };
+    else if (g.insufficient_material()) c = { done: true, over: 'Drawn: neither side has enough material to give mate.', ev: { terminal: 'draw', cp: 0, mate: null } };
+    if (c) exCache[fen] = c;
+    return c || null;
+  }
+  function exStore(fen, lines, done, target) {
+    var a = lines[1];
+    if (!a || !a.pv.length) return;
+    var use = { 1: a };
+    if (lines[2] && lines[2].depth === a.depth && lines[2].pv[0] !== a.pv[0]) use[2] = lines[2];
+    exCache[fen] = { ev: Review.toEval(fen, use), depth: a.depth, target: target, done: done,
+      also: use[2] ? (Review.sanLine(fen, use[2].pv, 1)[0] || null) : null };
+    if (state.explore && currentFen() === fen) scheduleLive();
+  }
+  /* The position the engine should be looking at for the explorer right now, if any. */
+  function exNeed() {
+    if (!state.explore || state.running) return null;
+    var fen = currentFen(), c = exGet(fen);
+    return c && c.done ? null : fen;
+  }
+  function exPump() {
+    var fen = exNeed();
+    if (exJob.busy) {
+      if (exJob.fen !== fen) { exJob.stopped = true; if (engine) engine.send('stop'); }
+      return;
+    }
+    if (!fen) return;
+    exJob.busy = true; exJob.fen = fen; exJob.stopped = false;
+    exJob.promise = getEngine().then(function (eng) {
+      if (exNeed() !== fen) return;
+      var depth = DEPTHS[eng.kind][$('depth').value] || DEPTHS[eng.kind].standard;
+      eng.onInfo = function () { exStore(fen, eng.lines, false, depth); };
+      return eng.analyse(fen, depth).then(function (lines) {
+        eng.onInfo = null;
+        exStore(fen, lines, !exJob.stopped, depth);
+      });
+    }).catch(function (err) {
+      if (engine) engine.onInfo = null;
+      exCache[fen] = { done: true, error: err.message };
+      if (state.explore && currentFen() === fen) scheduleLive();
+    }).then(function () {
+      exJob.busy = false; exJob.fen = null;
+      exPump();
+    });
+  }
+  var livePending = false;
+  function scheduleLive() {
+    if (livePending) return;
+    livePending = true;
+    requestAnimationFrame(function () { livePending = false; updateExploreLive(); drawArrow(); renderEvalBar(); });
+  }
+
+  function refresh() { renderBoard(); renderVerdict(); exPump(); }
+  function dropGhost() { if (pick && pick.ghost) { pick.ghost.remove(); pick.ghost = null; } }
+  function resetPick() { dropGhost(); pick = null; }
+  function exGo(p) {
+    var x = state.explore; resetPick();
+    x.pos = Math.max(0, Math.min(x.moves.length, p));
+    refresh();
+  }
+  function setExplore(on) {
+    resetPick();
+    state.explore = on ? { moves: [], pos: 0 } : null;
+    refresh();
+  }
+  function step(d) {
+    var x = state.explore;
+    if (!x) { select(state.sel + d); return; }
+    if (d < 0 && x.pos === 0) setExplore(false); else exGo(x.pos + d);
+  }
+  function playMove(from, to, promotion) {
+    var fen = currentFen(), g = new Chess(fen);
+    var m = g.move({ from: from, to: to, promotion: promotion });
+    if (!m) return;
+    var uci = m.from + m.to + (m.promotion || ''), x = state.explore;
+    if (!x) {
+      /* Playing the game's own next move just steps forward. Anything else starts a side line. */
+      var nx = state.game.moves[state.sel + 1];
+      if (nx && nx.uci === uci) { select(state.sel + 1); return; }
+      x = state.explore = { moves: [], pos: 0 };
+    }
+    var same = x.moves[x.pos] && x.moves[x.pos].uci === uci;
+    if (!same) {
+      x.moves.length = x.pos;
+      x.moves.push({ san: m.san, uci: uci, from: m.from, to: m.to, color: m.color, fenBefore: fen, fenAfter: g.fen() });
+    }
+    exGo(x.pos + 1);
+  }
+
+  /* ---------- moving pieces on the board (click a piece then a square, or drag) ---------- */
+  function squareAt(cx, cy) {
+    var r = $('board').getBoundingClientRect();
+    var x = Math.floor((cx - r.left) / r.width * 8), y = Math.floor((cy - r.top) / r.height * 8);
+    if (x < 0 || x > 7 || y < 0 || y > 7) return null;
+    return String.fromCharCode(97 + (state.flip ? 7 - x : x)) + ((state.flip ? y : 7 - y) + 1);
+  }
+  function legalFrom(sq) {
+    var t = {}, n = 0;
+    new Chess(currentFen()).moves({ square: sq, verbose: true }).forEach(function (m) { (t[m.to] = t[m.to] || []).push(m); n++; });
+    return n ? t : null;
+  }
+  function tryMove(to) {
+    var m = pick.targets[to][0], from = pick.from;
+    resetPick();
+    if (!m.promotion) { playMove(from, to); return; }
+    markPick();
+    var box = el('div', 'promo');
+    ['q', 'r', 'b', 'n'].forEach(function (t) {
+      var b = el('button'); b.setAttribute('aria-label', 'Promote to ' + { q: 'queen', r: 'rook', b: 'bishop', n: 'knight' }[t]);
+      b.appendChild(el('span', 'pc ' + m.color, glyph(t)));
+      b.addEventListener('click', function () { playMove(from, to, t); });
+      box.appendChild(b);
+    });
+    box.addEventListener('click', function (e) { if (e.target === box) box.remove(); });
+    $('board').appendChild(box);
+  }
+  $('board').addEventListener('pointerdown', function (e) {
+    if (!state.game || e.button > 0 || (e.target.closest && e.target.closest('.promo'))) return;
+    var sq = squareAt(e.clientX, e.clientY);
+    if (!sq) return;
+    if (pick && pick.targets[sq]) { e.preventDefault(); tryMove(sq); return; }
+    var t = legalFrom(sq);
+    resetPick();
+    if (t) {
+      e.preventDefault();
+      pick = { from: sq, targets: t, ghost: null, down: { id: e.pointerId, x: e.clientX, y: e.clientY } };
+      try { this.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+    markPick();
+  });
+  $('board').addEventListener('pointermove', function (e) {
+    if (!pick || !pick.down || pick.down.id !== e.pointerId) return;
+    if (!pick.ghost) {
+      if (Math.abs(e.clientX - pick.down.x) + Math.abs(e.clientY - pick.down.y) < 6) return;
+      var p = new Chess(currentFen()).get(pick.from);
+      pick.ghost = el('span', 'pc ' + p.color + ' ghost', glyph(p.type));
+      pick.ghost.style.fontSize = (this.getBoundingClientRect().width * 0.096) + 'px';
+      document.body.appendChild(pick.ghost);
+      markPick();
+    }
+    pick.ghost.style.left = e.clientX + 'px'; pick.ghost.style.top = e.clientY + 'px';
+  });
+  $('board').addEventListener('pointerup', function (e) {
+    if (!pick || !pick.down || pick.down.id !== e.pointerId) return;
+    var dragged = !!pick.ghost; pick.down = null;
+    if (!dragged) return;   /* a plain click leaves the piece selected, ready for a second click */
+    var sq = squareAt(e.clientX, e.clientY);
+    if (sq && pick.targets[sq]) { tryMove(sq); return; }
+    if (sq === pick.from) dropGhost(); else resetPick();
+    markPick();
+  });
+  $('board').addEventListener('pointercancel', function () { if (pick) { dropGhost(); pick.down = null; markPick(); } });
 
   function renderVerdict() {
     var v = $('verdict'); v.textContent = '';
+    $('explore').textContent = state.explore ? 'Exit line' : 'Explore';
+    if (state.explore) { renderExplore(v); return; }
     if (!state.review) {
       v.appendChild(el('p', null, state.running ? 'The engine is working through the game. You can step through the moves while you wait.' : 'Press Review game to analyse this game.'));
       return;
@@ -654,7 +909,7 @@ var Review = (function () {
     }
     var m = state.review.moves[state.sel], c = CLS[m.cls];
     var head = el('div', 'head');
-    var pill = el('span', 'pill'); pill.style.setProperty('--hl', hl(m.cls));
+    var pill = el('span', 'pill'); paint(pill, m.cls);
     pill.appendChild(el('i', null, c.sym)); pill.appendChild(document.createTextNode(c.label));
     head.appendChild(pill);
     head.appendChild(el('span', 'mv', Math.floor(state.sel / 2 + 1) + (m.color === 'w' ? '. ' : '… ') + m.san));
@@ -668,6 +923,63 @@ var Review = (function () {
       if (m.bestLine.length > 1) b.appendChild(el('span', 'linepv', ' ' + m.bestLine.slice(1).join(' ')));
       v.appendChild(b);
     }
+  }
+
+  function renderExplore(v) {
+    var x = state.explore, head = el('div', 'head');
+    head.appendChild(el('span', 'pill ex', 'Exploring'));
+    var from = 'from the starting position';
+    if (state.sel >= 0) { var gm = state.game.moves[state.sel]; from = 'after ' + Math.floor(state.sel / 2 + 1) + (gm.color === 'w' ? '. ' : '… ') + gm.san; }
+    head.appendChild(el('span', null, from));
+    var ev = el('span', 'ev'); ev.id = 'ex-ev'; head.appendChild(ev);
+    v.appendChild(head);
+    if (x.moves.length) {
+      var line = el('div', 'exline');
+      x.moves.forEach(function (m, i) {
+        if (m.color === 'w' || i === 0) line.appendChild(el('span', 'n', m.fenBefore.split(' ')[5] + (m.color === 'w' ? '.' : '…')));
+        var b = el('button', i + 1 === x.pos ? 'sel' : (i + 1 > x.pos ? 'fut' : ''), m.san);
+        b.addEventListener('click', function () { exGo(i + 1); });
+        line.appendChild(b);
+      });
+      v.appendChild(line);
+    } else {
+      v.appendChild(el('p', null, 'Move a piece on the board to try your own idea, or follow the engine with Play best move.'));
+    }
+    var live = el('div', 'better'); live.id = 'ex-live'; v.appendChild(live);
+    var btns = el('div', 'exbtns');
+    var best = el('button', 'primary', 'Play best move'); best.id = 'ex-best';
+    best.addEventListener('click', function () {
+      var c = exGet(currentFen());
+      if (c && c.ev && c.ev.best) playMove(c.ev.best.slice(0, 2), c.ev.best.slice(2, 4), c.ev.best[4]);
+    });
+    var back = el('button', null, 'Take back'); back.disabled = x.pos === 0;
+    back.addEventListener('click', function () { exGo(x.pos - 1); });
+    btns.appendChild(best); btns.appendChild(back);
+    v.appendChild(btns);
+    updateExploreLive();
+  }
+  /* The part of the explore panel that changes while the engine thinks. The buttons around it are left alone. */
+  function updateExploreLive() {
+    var box = $('ex-live');
+    if (!box || !state.explore) return;
+    box.textContent = '';
+    var fen = currentFen(), c = exGet(fen);
+    $('ex-best').disabled = !(c && c.ev && c.ev.best);
+    $('ex-ev').textContent = c && c.ev ? Review.fmtEval(c.ev) : '';
+    if (!c) { box.textContent = state.running ? 'The engine is busy reviewing the game. The best move will show here when it finishes.' : 'Finding the best move…'; return; }
+    if (c.error) { box.textContent = c.error; return; }
+    if (c.over) { box.textContent = c.over; return; }
+    var line = Review.sanLine(fen, c.ev.pv, 6);
+    box.appendChild(document.createTextNode('Best move for ' + (fen.split(' ')[1] === 'w' ? 'White' : 'Black') + ': '));
+    box.appendChild(el('b', null, line[0]));
+    if (line.length > 1) box.appendChild(el('span', 'linepv', ' ' + line.slice(1).join(' ')));
+    if (c.also) {
+      var also = el('div', null, 'Next best: ');
+      also.appendChild(el('b', null, c.also));
+      also.appendChild(el('span', 'linepv', ' (' + Review.fmtEval(c.ev.second) + ')'));
+      box.appendChild(also);
+    }
+    box.appendChild(el('small', null, c.done || c.depth >= c.target ? 'Engine depth ' + c.depth + '.' : 'Thinking… depth ' + c.depth + ' of ' + c.target + '.'));
   }
 
   function renderSummary() {
@@ -692,7 +1004,7 @@ var Review = (function () {
     Review.CLASSES.forEach(function (c) {
       if (c.id === 'forced' && !r.w.counts.forced && !r.b.counts.forced) return;
       var tr = el('tr'), name = el('td');
-      var dot = el('span', 'dot', c.sym); dot.style.setProperty('--hl', hl(c.id));
+      var dot = el('span', 'dot', c.sym); paint(dot, c.id);
       name.appendChild(dot); name.appendChild(document.createTextNode(c.label));
       var a = el('td', 'n' + (r.w.counts[c.id] ? '' : ' zero'), String(r.w.counts[c.id]));
       var b = el('td', 'n' + (r.b.counts[c.id] ? '' : ' zero'), String(r.b.counts[c.id]));
@@ -717,7 +1029,7 @@ var Review = (function () {
     g.appendChild(el('div', 'mid'));
     mv.forEach(function (m, i) {
       if (!NOTABLE[m.cls]) return;
-      var pt = el('div', 'pt'); pt.style.setProperty('--hl', hl(m.cls));
+      var pt = el('div', 'pt'); paint(pt, m.cls);
       pt.style.left = ((i + 1) / n * 100) + '%'; pt.style.top = Math.max(6, Math.min(94, 100 - m.whiteWin)) + '%';
       g.appendChild(pt);
     });
@@ -743,7 +1055,7 @@ var Review = (function () {
       }
       var b = el('button', 'mv-btn'); b.dataset.i = i;
       var dot = el('span', 'dot' + (m.cls ? '' : ' quiet'), m.cls ? CLS[m.cls].sym : '');
-      if (m.cls) { dot.style.setProperty('--hl', hl(m.cls)); b.title = CLS[m.cls].label; }
+      if (m.cls) { paint(dot, m.cls); b.title = CLS[m.cls].label; }
       b.appendChild(dot); b.appendChild(document.createTextNode(m.san));
       row.appendChild(b);
     });
@@ -765,10 +1077,11 @@ var Review = (function () {
 
   function select(i) {
     if (!state.game) return;
+    resetPick(); state.explore = null;
     state.sel = Math.max(-1, Math.min(state.game.moves.length - 1, i));
-    renderBoard(); renderVerdict(); markSelected(); placeCursor();
+    renderBoard(); renderVerdict(); markSelected(); placeCursor(); exPump();
   }
-  function renderAll() { renderBoard(); renderVerdict(); renderSummary(); renderGraph(); renderMoves(); }
+  function renderAll() { renderBoard(); renderVerdict(); renderSummary(); renderGraph(); renderMoves(); exPump(); }
 
   function showError(msg) { var e = $('error'); e.textContent = msg || ''; e.hidden = !msg; }
   function setRunning(on) {
@@ -780,7 +1093,8 @@ var Review = (function () {
     showError('');
     var game;
     try { game = Review.parseGame($('pgn').value); } catch (err) { showError(err.message); return; }
-    state.game = game; state.review = null; state.sel = -1; state.cancel = false;
+    resetPick(); exCache = {};
+    state.game = game; state.review = null; state.sel = -1; state.cancel = false; state.explore = null;
     $('note').textContent = '';
     setRunning(true); renderAll();
     analyseGame(game, $('depth').value).then(function (evals) {
@@ -796,8 +1110,9 @@ var Review = (function () {
   $('go').addEventListener('click', start);
   $('cancel').addEventListener('click', function () { state.cancel = true; if (engine) engine.send('stop'); });
   $('first').addEventListener('click', function () { select(-1); });
-  $('prev').addEventListener('click', function () { select(state.sel - 1); });
-  $('next').addEventListener('click', function () { select(state.sel + 1); });
+  $('prev').addEventListener('click', function () { step(-1); });
+  $('next').addEventListener('click', function () { step(1); });
+  $('explore').addEventListener('click', function () { setExplore(!state.explore); });
   $('last').addEventListener('click', function () { select(state.game.moves.length - 1); });
   $('flip').addEventListener('click', function () { state.flip = !state.flip; renderBoard(); });
   $('moves').addEventListener('click', function (e) {
@@ -812,8 +1127,9 @@ var Review = (function () {
   document.addEventListener('keydown', function (e) {
     var t = e.target.tagName;
     if (t === 'TEXTAREA' || t === 'SELECT' || t === 'INPUT') return;
-    if (e.key === 'ArrowLeft') { select(state.sel - 1); e.preventDefault(); }
-    else if (e.key === 'ArrowRight') { select(state.sel + 1); e.preventDefault(); }
+    if (e.key === 'ArrowLeft') { step(-1); e.preventDefault(); }
+    else if (e.key === 'ArrowRight') { step(1); e.preventDefault(); }
+    else if (e.key === 'Escape' && state.explore) { setExplore(false); e.preventDefault(); }
     else if (e.key === 'ArrowUp' || e.key === 'Home') { select(-1); e.preventDefault(); }
     else if (e.key === 'ArrowDown' || e.key === 'End') { select(state.game.moves.length - 1); e.preventDefault(); }
   });
@@ -871,6 +1187,83 @@ var Review = (function () {
   $('cc-find').addEventListener('click', findGames);
   $('cc-user').addEventListener('keydown', function (e) { if (e.key === 'Enter') findGames(); });
   try { var saved = localStorage.getItem('cc-user'); if (saved) $('cc-user').value = saved; } catch (e) {}
+
+  /* ---------- colours: every colour in the app is a CSS variable the user can override; choices are kept in this browser ---------- */
+  var COLOR_GROUPS = [
+    ['Page', [['bg', 'Background'], ['surface', 'Panels'], ['ink', 'Text'], ['muted', 'Secondary text'], ['line', 'Borders'], ['accent', 'Buttons and highlights'], ['accent-ink', 'Text on buttons']]],
+    ['Board', [['sq-light', 'Light squares'], ['sq-dark', 'Dark squares'], ['coord', 'Coordinates'], ['piece-white', 'White pieces'], ['piece-white-edge', 'White piece outline'], ['piece-black', 'Black pieces'], ['piece-black-edge', 'Black piece glow'], ['arrow', 'Best-move arrow'], ['pick', 'Selected piece and its moves']]],
+    ['Evaluation bar and graph', [['graph-white', 'White’s share'], ['graph-black', 'Black’s share']]],
+    ['Move grades', Review.CLASSES.map(function (c) { return ['c-' + c.id, c.label]; })]
+  ];
+  var root = document.documentElement, colors = {}, colorKeys = {};
+  COLOR_GROUPS.forEach(function (g) { g[1].forEach(function (f) { colorKeys[f[0]] = 1; }); });
+  try {
+    var stored = JSON.parse(localStorage.getItem('colors') || '{}') || {};
+    for (var ck in stored) if (colorKeys[ck] && /^#[0-9a-f]{6}$/i.test(stored[ck])) colors[ck] = stored[ck];
+  } catch (e) {}
+  function luminance(hex) {
+    var n = parseInt(hex.slice(1), 16);
+    var ch = [n >> 16 & 255, n >> 8 & 255, n & 255].map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+  }
+  function applyColor(k) {
+    var v = colors[k];
+    if (v) root.style.setProperty('--' + k, v); else root.style.removeProperty('--' + k);
+    if (k.indexOf('c-') === 0) {   /* keep the symbol on a grade badge readable on a pale custom colour */
+      if (v) root.style.setProperty('--ci-' + k.slice(2), luminance(v) > 0.4 ? '#17212b' : '#ffffff'); else root.style.removeProperty('--ci-' + k.slice(2));
+    }
+    if (k === 'accent') document.querySelector('meta[name="theme-color"]').content = v || '#2c5b88';
+  }
+  function saveColors() { try { localStorage.setItem('colors', JSON.stringify(colors)); } catch (e) {} }
+  function syncColors() {
+    var cs = getComputedStyle(root), inputs = $('colors').querySelectorAll('input');
+    for (var i = 0; i < inputs.length; i++) {
+      var k = inputs[i].dataset.k;
+      inputs[i].value = colors[k] || cs.getPropertyValue('--' + k).trim();
+      inputs[i].parentNode.querySelector('button').hidden = !colors[k];
+    }
+  }
+  (function buildColors() {
+    var panel = $('colors');
+    COLOR_GROUPS.forEach(function (g) {
+      var group = el('div', 'cgroup'), grid = el('div', 'cgrid');
+      group.appendChild(el('h2', null, g[0]));
+      g[1].forEach(function (f) {
+        var field = el('div', 'cfield'), input = el('input'), label = el('label', null, f[1]), reset = el('button', null, 'Reset');
+        input.type = 'color'; input.id = 'col-' + f[0]; input.dataset.k = f[0]; label.htmlFor = input.id;
+        reset.setAttribute('aria-label', 'Reset ' + f[1]); reset.dataset.k = f[0];
+        field.appendChild(input); field.appendChild(label); field.appendChild(reset); grid.appendChild(field);
+      });
+      group.appendChild(grid); panel.appendChild(group);
+    });
+    var foot = el('div', 'input-row'), all = el('button', null, 'Reset all colors');
+    all.id = 'colors-reset';
+    foot.appendChild(all); foot.appendChild(el('p', 'fine', 'Your colors are saved in this browser.'));
+    panel.appendChild(foot);
+    panel.addEventListener('input', function (e) {
+      var k = e.target.dataset.k;
+      if (!k) return;
+      colors[k] = e.target.value; applyColor(k); saveColors();
+      e.target.parentNode.querySelector('button').hidden = false;
+    });
+    panel.addEventListener('click', function (e) {
+      if (e.target.tagName !== 'BUTTON') return;
+      if (e.target === all) { var old = colors; colors = {}; for (var k in old) applyColor(k); }
+      else { delete colors[e.target.dataset.k]; applyColor(e.target.dataset.k); }
+      saveColors(); syncColors();
+    });
+    for (var k in colors) applyColor(k);
+    syncColors();
+  })();
+  $('colors-btn').addEventListener('click', function () {
+    var panel = $('colors'); panel.hidden = !panel.hidden;
+    this.setAttribute('aria-expanded', String(!panel.hidden));
+    syncColors();
+  });
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) mq.addEventListener('change', syncColors);
+  }
 
   /* Offline support and install */
   if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
