@@ -105,7 +105,7 @@
       }),
       section('Pieces', PIECES, function () { return look.pieces; }, function (b, it) {
         if (it[0] === 'glyph') { b.appendChild(el('span', 'emo', '♞')); return; }
-        var img = el('img'); img.src = 'pieces/' + it[0] + '/wN.svg'; img.alt = ''; img.loading = 'lazy'; b.appendChild(img);
+        var img = el('img'); img.src = 'pieces/' + it[0] + '/wN.svg'; img.alt = ''; img.width = 30; img.height = 30; b.appendChild(img);
       }, function (it) { look.pieces = it[0]; }),
       section('Hats', HATS, function () { return look.hat; }, function (b, it) { if (it[2]) b.appendChild(el('span', 'emo', it[2])); }, function (it) { look.hat = it[0]; })
     ];
