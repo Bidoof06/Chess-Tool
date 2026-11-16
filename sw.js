@@ -1,8 +1,10 @@
 // Offline support: keeps a copy of the app files, serves them instantly, and refreshes them in the background.
 // Bump the version when you upload changed files so installed copies pick them up.
-const CACHE = 'game-review-v3';
-const FILES = ['./', 'index.html', 'training.html', 'style.css', 'board.js', 'training.js', 'openings.json', 'puzzles.json', 'chess.js', 'stockfish-19-lite-single.js', 'stockfish-19-lite-single.wasm',
-  'stockfish.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
+const CACHE = 'game-review-v4';
+const FILES = ['./', 'index.html', 'training.html', 'style.css', 'appearance.js', 'board.js', 'training.js', 'openings.json', 'puzzles.json', 'chess.js', 'stockfish-19-lite-single.js', 'stockfish-19-lite-single.wasm',
+  'stockfish.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png',
+  // the default piece set; other sets are cached the first time they are chosen
+  ...['wK', 'wQ', 'wR', 'wB', 'wN', 'wP', 'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'].map((p) => 'pieces/cburnett/' + p + '.svg')];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chess Game Review</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#2c5b88">
+<meta name="theme-color" content="#24231f">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,24 +13,23 @@
 <meta name="apple-mobile-web-app-title" content="Game Review">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script>
-/* Apply saved custom colours before the first paint. The Colors panel further down manages them. */
-try { (function () { var c = JSON.parse(localStorage.getItem('colors') || '{}'); for (var k in c) if (/^[a-z-]+$/.test(k) && /^#[0-9a-f]{6}$/i.test(c[k])) document.documentElement.style.setProperty('--' + k, c[k]); })(); } catch (e) {}
-</script>
+<script src="appearance.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
   <header class="top">
+    <span class="logo" aria-hidden="true">♞</span>
     <h1>Chess Game Review</h1>
     <p>Paste a game, get engine analysis, accuracy, a rating estimate and a better move for every slip.</p>
     <div class="top-nav">
+      <a class="btn sel" href="index.html" aria-current="page">Review</a>
       <a class="btn" href="training.html">Training</a>
-      <button id="colors-btn" aria-expanded="false" aria-controls="colors">Colors</button>
+      <button id="colors-btn" aria-expanded="false" aria-controls="colors">Appearance</button>
     </div>
   </header>
 
-  <section class="panel colors" id="colors" aria-label="Colors" hidden></section>
+  <section class="panel colors" id="colors" aria-label="Appearance" hidden></section>
 
   <section class="panel input" aria-label="Game input">
     <div class="lookup">
@@ -450,9 +449,9 @@ var Review = (function () {
       var sq = el('div', 'sq ' + ((f + r) % 2 ? 'l' : 'd')); sq.dataset.sq = name;
       if (c === 0) sq.appendChild(el('span', 'co r', String(r + 1)));
       if (y === 7) sq.appendChild(el('span', 'co f', String.fromCharCode(97 + f)));
-      if (mv && (name === mv.from || name === mv.to)) { sq.classList.add('hl'); paint(sq, mv.cls || 'forced'); }
+      if (mv && (name === mv.from || name === mv.to)) { sq.classList.add('hl'); paint(sq, mv.cls || 'move'); }
       var p = g.get(name);
-      if (p) { sq.appendChild(el('span', 'pc ' + p.color, glyph(p.type))); if (p.color === turn) sq.classList.add('mine'); }
+      if (p) { sq.appendChild(el('span', 'pc ' + p.color + ' t-' + p.type, glyph(p.type))); if (p.color === turn) sq.classList.add('mine'); }
       if (mv && mv.cls && name === mv.to) sq.appendChild(el('span', 'badge', CLS[mv.cls].sym));
       board.appendChild(sq);
     }
@@ -631,7 +630,7 @@ var Review = (function () {
     var box = el('div', 'promo');
     ['q', 'r', 'b', 'n'].forEach(function (t) {
       var b = el('button'); b.setAttribute('aria-label', 'Promote to ' + { q: 'queen', r: 'rook', b: 'bishop', n: 'knight' }[t]);
-      b.appendChild(el('span', 'pc ' + m.color, glyph(t)));
+      b.appendChild(el('span', 'pc ' + m.color + ' t-' + t, glyph(t)));
       b.addEventListener('click', function () { playMove(from, to, t); });
       box.appendChild(b);
     });
@@ -657,7 +656,7 @@ var Review = (function () {
     if (!pick.ghost) {
       if (Math.abs(e.clientX - pick.down.x) + Math.abs(e.clientY - pick.down.y) < 6) return;
       var p = new Chess(currentFen()).get(pick.from);
-      pick.ghost = el('span', 'pc ' + p.color + ' ghost', glyph(p.type));
+      pick.ghost = el('span', 'pc ' + p.color + ' t-' + p.type + ' ghost', glyph(p.type));
       pick.ghost.style.fontSize = (this.getBoundingClientRect().width * 0.096) + 'px';
       document.body.appendChild(pick.ghost);
       markPick();
@@ -1021,83 +1020,6 @@ var Review = (function () {
   $('cc-find').addEventListener('click', findGames);
   $('cc-user').addEventListener('keydown', function (e) { if (e.key === 'Enter') findGames(); });
   try { var saved = localStorage.getItem('cc-user'); if (saved) $('cc-user').value = saved; } catch (e) {}
-
-  /* ---------- colours: every colour in the app is a CSS variable the user can override; choices are kept in this browser ---------- */
-  var COLOR_GROUPS = [
-    ['Page', [['bg', 'Background'], ['surface', 'Panels'], ['ink', 'Text'], ['muted', 'Secondary text'], ['line', 'Borders'], ['accent', 'Buttons and highlights'], ['accent-ink', 'Text on buttons']]],
-    ['Board', [['sq-light', 'Light squares'], ['sq-dark', 'Dark squares'], ['coord', 'Coordinates'], ['piece-white', 'White pieces'], ['piece-white-edge', 'White piece outline'], ['piece-black', 'Black pieces'], ['piece-black-edge', 'Black piece glow'], ['arrow', 'Best-move arrow'], ['pick', 'Selected piece and its moves']]],
-    ['Evaluation bar and graph', [['graph-white', 'White’s share'], ['graph-black', 'Black’s share']]],
-    ['Move grades', Review.CLASSES.map(function (c) { return ['c-' + c.id, c.label]; })]
-  ];
-  var root = document.documentElement, colors = {}, colorKeys = {};
-  COLOR_GROUPS.forEach(function (g) { g[1].forEach(function (f) { colorKeys[f[0]] = 1; }); });
-  try {
-    var stored = JSON.parse(localStorage.getItem('colors') || '{}') || {};
-    for (var ck in stored) if (colorKeys[ck] && /^#[0-9a-f]{6}$/i.test(stored[ck])) colors[ck] = stored[ck];
-  } catch (e) {}
-  function luminance(hex) {
-    var n = parseInt(hex.slice(1), 16);
-    var ch = [n >> 16 & 255, n >> 8 & 255, n & 255].map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
-    return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
-  }
-  function applyColor(k) {
-    var v = colors[k];
-    if (v) root.style.setProperty('--' + k, v); else root.style.removeProperty('--' + k);
-    if (k.indexOf('c-') === 0) {   /* keep the symbol on a grade badge readable on a pale custom colour */
-      if (v) root.style.setProperty('--ci-' + k.slice(2), luminance(v) > 0.4 ? '#17212b' : '#ffffff'); else root.style.removeProperty('--ci-' + k.slice(2));
-    }
-    if (k === 'accent') document.querySelector('meta[name="theme-color"]').content = v || '#2c5b88';
-  }
-  function saveColors() { try { localStorage.setItem('colors', JSON.stringify(colors)); } catch (e) {} }
-  function syncColors() {
-    var cs = getComputedStyle(root), inputs = $('colors').querySelectorAll('input');
-    for (var i = 0; i < inputs.length; i++) {
-      var k = inputs[i].dataset.k;
-      inputs[i].value = colors[k] || cs.getPropertyValue('--' + k).trim();
-      inputs[i].parentNode.querySelector('button').hidden = !colors[k];
-    }
-  }
-  (function buildColors() {
-    var panel = $('colors');
-    COLOR_GROUPS.forEach(function (g) {
-      var group = el('div', 'cgroup'), grid = el('div', 'cgrid');
-      group.appendChild(el('h2', null, g[0]));
-      g[1].forEach(function (f) {
-        var field = el('div', 'cfield'), input = el('input'), label = el('label', null, f[1]), reset = el('button', null, 'Reset');
-        input.type = 'color'; input.id = 'col-' + f[0]; input.dataset.k = f[0]; label.htmlFor = input.id;
-        reset.setAttribute('aria-label', 'Reset ' + f[1]); reset.dataset.k = f[0];
-        field.appendChild(input); field.appendChild(label); field.appendChild(reset); grid.appendChild(field);
-      });
-      group.appendChild(grid); panel.appendChild(group);
-    });
-    var foot = el('div', 'input-row'), all = el('button', null, 'Reset all colors');
-    all.id = 'colors-reset';
-    foot.appendChild(all); foot.appendChild(el('p', 'fine', 'Your colors are saved in this browser.'));
-    panel.appendChild(foot);
-    panel.addEventListener('input', function (e) {
-      var k = e.target.dataset.k;
-      if (!k) return;
-      colors[k] = e.target.value; applyColor(k); saveColors();
-      e.target.parentNode.querySelector('button').hidden = false;
-    });
-    panel.addEventListener('click', function (e) {
-      if (e.target.tagName !== 'BUTTON') return;
-      if (e.target === all) { var old = colors; colors = {}; for (var k in old) applyColor(k); }
-      else { delete colors[e.target.dataset.k]; applyColor(e.target.dataset.k); }
-      saveColors(); syncColors();
-    });
-    for (var k in colors) applyColor(k);
-    syncColors();
-  })();
-  $('colors-btn').addEventListener('click', function () {
-    var panel = $('colors'); panel.hidden = !panel.hidden;
-    this.setAttribute('aria-expanded', String(!panel.hidden));
-    syncColors();
-  });
-  if (window.matchMedia) {
-    var mq = window.matchMedia('(prefers-color-scheme: dark)');
-    if (mq.addEventListener) mq.addEventListener('change', syncColors);
-  }
 
   /* Offline support and install */
   if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }

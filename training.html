@@ -5,26 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chess Training</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#2c5b88">
+<meta name="theme-color" content="#24231f">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script>
-/* Apply the custom colours chosen on the review page before the first paint. */
-try { (function () { var c = JSON.parse(localStorage.getItem('colors') || '{}'); for (var k in c) if (/^[a-z-]+$/.test(k) && /^#[0-9a-f]{6}$/i.test(c[k])) document.documentElement.style.setProperty('--' + k, c[k]); })(); } catch (e) {}
-</script>
+<script src="appearance.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
   <header class="top">
+    <span class="logo" aria-hidden="true">♞</span>
     <h1>Training</h1>
     <p>Walk through openings move by move, practise their lines, and solve tactics.</p>
-    <div class="top-nav"><a class="btn" href="index.html">Game review</a></div>
+    <div class="top-nav">
+      <a class="btn" href="index.html">Review</a>
+      <a class="btn sel" href="training.html" aria-current="page">Training</a>
+      <button id="colors-btn" aria-expanded="false" aria-controls="colors">Appearance</button>
+    </div>
   </header>
+
+  <section class="panel colors" id="colors" aria-label="Appearance" hidden></section>
 
   <div class="tabs" role="tablist">
     <button class="tab sel" id="tab-op" role="tab" aria-selected="true">Openings</button>

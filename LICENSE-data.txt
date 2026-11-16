@@ -13,5 +13,17 @@ puzzles.json
            band between 600 and 2200, keeping only well-tested ones (popularity 90 or more, 1,000 or more plays,
            rating deviation 80 or less, 2 to 10 moves). Kept fields: id, position, moves, rating, themes.
 
+pieces/
+  Source:  piece sets as packaged by Lichess  https://github.com/lichess-org/lila/tree/master/public/piece
+           (licences as listed in that project's COPYING.md). The files are unchanged.
+  cburnett ("Classic")   Colin M.L. Burnett     GPLv2+
+  merida                 Armando Hernandez Marroquin   GPLv2+
+  chessnut               Alexis Luengas         Apache 2.0
+  mpchess ("Outline")    Maxime Chupin          GPLv3+
+  rhosgfx ("Clay")       RhosGFX                CC0 1.0
+  celtic, fantasy, spatial   Maurizio Monge     MIT
+
+Hats are ordinary emoji drawn by the device's own font; no artwork is bundled for them.
+
 The opening overviews and the move-by-move notes shown on the training page are not from these data sets:
 the overviews were written for this app, and the notes are generated from the position by training.js.

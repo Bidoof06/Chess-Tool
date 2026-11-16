@@ -6,7 +6,8 @@ Everything runs in the browser; there is no server.
 
 - **Explore side lines:** click or drag a piece on the board (or press Explore) to try your own moves from any
   point in the game. The engine shows the best move and the next best one for every position you reach.
-- **Colors:** the Colors button lets you change every color in the app (page, board, pieces, arrows, move grades).
+- **Appearance:** the Appearance button on either page sets the theme (Dark, Midnight, Light), board colors,
+  piece set (eight image sets or plain symbols), hats for the pieces, and custom colors for everything.
   Your choices are saved in the browser.
 
 ## Training
@@ -27,6 +28,8 @@ Lichess puzzle database, both CC0 (public domain).
 - `index.html` - the app (markup, styles and logic)
 - `training.html`, `training.js` - the training page
 - `style.css` - styles shared by both pages
+- `appearance.js` - themes, piece sets, hats and custom colors, shared by both pages
+- `pieces/` - piece artwork (see `LICENSE-data.txt`)
 - `board.js` - the movable board used by the training page
 - `openings.json`, `puzzles.json` - training data (see `LICENSE-data.txt`)
 - `chess.js` - chess rules and PGN parsing (chess.js 0.10.3, BSD licence)

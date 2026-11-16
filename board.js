@@ -16,7 +16,7 @@ var ChessBoard = (function () {
   function Board(root, opts) {
     var self = this;
     this.root = root; this.opts = opts || {}; this.pick = null;
-    this.s = { fen: START, flip: false, movable: true, last: null, tone: 'forced', arrow: null, badge: null };
+    this.s = { fen: START, flip: false, movable: true, last: null, tone: 'move', arrow: null, badge: null };
     root.classList.add('board');
     root.addEventListener('pointerdown', function (e) { self.down(e); });
     root.addEventListener('pointermove', function (e) { self.move(e); });
@@ -45,9 +45,9 @@ var ChessBoard = (function () {
       var sq = el('div', 'sq ' + ((f + r) % 2 ? 'l' : 'd')); sq.dataset.sq = name;
       if (c === 0) sq.appendChild(el('span', 'co r', String(r + 1)));
       if (y === 7) sq.appendChild(el('span', 'co f', String.fromCharCode(97 + f)));
-      if (s.last && (name === s.last[0] || name === s.last[1])) { sq.classList.add('hl'); paint(sq, s.tone || 'forced'); }
+      if (s.last && (name === s.last[0] || name === s.last[1])) { sq.classList.add('hl'); paint(sq, s.tone || 'move'); }
       var p = g.get(name);
-      if (p) { sq.appendChild(el('span', 'pc ' + p.color, glyph(p.type))); if (mine && p.color === turn) sq.classList.add('mine'); }
+      if (p) { sq.appendChild(el('span', 'pc ' + p.color + ' t-' + p.type, glyph(p.type))); if (mine && p.color === turn) sq.classList.add('mine'); }
       if (s.badge && s.badge.sq === name) { var bd = el('span', 'badge', s.badge.sym); paint(bd, s.badge.tone); sq.appendChild(bd); }
       root.appendChild(sq);
     }
@@ -118,7 +118,7 @@ var ChessBoard = (function () {
     var box = el('div', 'promo');
     ['q', 'r', 'b', 'n'].forEach(function (t) {
       var b = el('button'); b.setAttribute('aria-label', 'Promote to ' + { q: 'queen', r: 'rook', b: 'bishop', n: 'knight' }[t]);
-      b.appendChild(el('span', 'pc ' + m.color, glyph(t)));
+      b.appendChild(el('span', 'pc ' + m.color + ' t-' + t, glyph(t)));
       b.addEventListener('click', function () { box.remove(); self.send(from, to, t); });
       box.appendChild(b);
     });
@@ -147,7 +147,7 @@ var ChessBoard = (function () {
     if (!pick.ghost) {
       if (Math.abs(e.clientX - pick.down.x) + Math.abs(e.clientY - pick.down.y) < 6) return;
       var p = new Chess(this.s.fen).get(pick.from);
-      pick.ghost = el('span', 'pc ' + p.color + ' ghost', glyph(p.type));
+      pick.ghost = el('span', 'pc ' + p.color + ' t-' + p.type + ' ghost', glyph(p.type));
       pick.ghost.style.fontSize = (this.root.getBoundingClientRect().width * 0.096) + 'px';
       document.body.appendChild(pick.ghost);
       this.mark();

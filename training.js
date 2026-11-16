@@ -11,18 +11,6 @@
   function sideName(c) { return c === 'w' ? 'White' : 'Black'; }
   function getJson(file) { return fetch(file).then(function (r) { if (!r.ok) throw new Error('Could not load ' + file + '.'); return r.json(); }); }
 
-  /* Readable symbols on pale custom grade colours (the review page sets these too). */
-  (function () {
-    var c = load('colors', {});
-    for (var k in c) {
-      if (k.indexOf('c-') !== 0 || !/^#[0-9a-f]{6}$/i.test(c[k])) continue;
-      var n = parseInt(c[k].slice(1), 16);
-      var ch = [n >> 16 & 255, n >> 8 & 255, n & 255].map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
-      var lum = 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
-      document.documentElement.style.setProperty('--ci-' + k.slice(2), lum > 0.4 ? '#17212b' : '#ffffff');
-    }
-  })();
-
   var ui = load('train-ui', {});
   if (location.hash === '#mistakes') { ui.tab = 'tac'; ui.src = 'mine'; }   /* the link shown after a review */
   var tab = ui.tab === 'tac' ? 'tac' : 'op';
@@ -396,7 +384,7 @@
     current = walk;
     var r = replay(op.path), n = op.path.length, fen = r.fens[n], last = r.hist[n - 1] || null;
     var node = nodeAt(op.path), named = nameOf(node), next = nextSan();
-    board.set({ fen: fen, flip: flip, movable: true, last: last ? [last.from, last.to] : null, tone: 'forced', arrow: null, badge: null });
+    board.set({ fen: fen, flip: flip, movable: true, last: last ? [last.from, last.to] : null, tone: 'move', arrow: null, badge: null });
     $('t-title').textContent = op.line ? 'Walking through: ' + op.line.name : (op.fam ? 'Exploring: ' + op.fam.name : 'Pick an opening on the right, or just start moving the pieces.');
     setNav([
       navBtn('|<', 'Back to the start', function () { goTo(0); }, false, !n),
@@ -506,7 +494,7 @@
     current = practice;
     var pr = op.pr, r = pr.r, n = pr.i, last = r.hist[n - 1] || null, total = pr.line.sans.length;
     var mine = !pr.done && n < total && r.hist[n].color === pr.side;
-    board.set({ fen: r.fens[n], flip: flip, movable: mine ? pr.side : false, last: last ? [last.from, last.to] : null, tone: 'forced', arrow: pr.arrow, badge: null });
+    board.set({ fen: r.fens[n], flip: flip, movable: mine ? pr.side : false, last: last ? [last.from, last.to] : null, tone: 'move', arrow: pr.arrow, badge: null });
     $('t-title').textContent = 'Practising: ' + pr.line.name + ' · you play ' + sideName(pr.side);
     setNav([
       navBtn('Show the move', null, function () { var w = r.hist[pr.i]; pr.clean = false; pr.arrow = w.from + w.to; pr.bad = 'The move is ' + w.san + '.'; renderOpenings(); }, true, !mine),
@@ -601,7 +589,7 @@
     clearTimeout(timer);
     var c = choose(tac.p ? tac.p.id : null);
     if (!c) { tac.p = null; renderTactics(); return; }
-    var p = { id: c.id, mine: c.mine || null, set: c.set || null, i: 0, failed: false, solved: false, shown: false, msg: null, arrow: null, last: null, tone: 'forced' };
+    var p = { id: c.id, mine: c.mine || null, set: c.set || null, i: 0, failed: false, solved: false, shown: false, msg: null, arrow: null, last: null, tone: 'move' };
     if (c.set) {
       p.moves = c.set[2].split(' ');
       var g = new Chess(c.set[1]);
@@ -640,7 +628,7 @@
       var ok = uci === want || g.in_checkmate() || (p.mine && p.mine.alt === uci);
       if (!ok) {
         puzzleFail(p);
-        p.msg = mv.san + ' is not the move. Try again.'; p.tone = 'forced';
+        p.msg = mv.san + ' is not the move. Try again.'; p.tone = 'move';
         renderTactics();
         return;
       }
@@ -650,7 +638,7 @@
       renderTactics();
       later(function () {
         if (tac.p !== p) return;
-        applyUci(p, p.moves[p.i]); p.i++; p.tone = 'forced';
+        applyUci(p, p.moves[p.i]); p.i++; p.tone = 'move';
         if (p.i >= p.moves.length) puzzleSolved(p); else renderTactics();
       }, 550);
     }
